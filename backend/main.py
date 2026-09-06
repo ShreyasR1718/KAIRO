@@ -182,3 +182,67 @@ def update_vote(post_id: int, vote: VoteUpdate):
         "post_id": post_id,
         "votes": new_votes
     }
+# ---------- Comments API ----------
+
+class CommentCreate(BaseModel):
+    username: str
+    content: str
+
+
+@app.post("/api/posts/{post_id}/comments")
+def create_comment(post_id: int, comment: CommentCreate):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        "SELECT id FROM posts WHERE id = ?",
+        (post_id,)
+    )
+
+    post = cursor.fetchone()
+
+    if post is None:
+        connection.close()
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found"
+        )
+
+    cursor.execute("""
+        INSERT INTO comments (post_id, username, content)
+        VALUES (?, ?, ?)
+    """, (
+        post_id,
+        comment.username,
+        comment.content
+    ))
+
+    connection.commit()
+
+    comment_id = cursor.lastrowid
+
+    connection.close()
+
+    return {
+        "message": "Comment created successfully",
+        "comment_id": comment_id
+    }
+
+
+@app.get("/api/posts/{post_id}/comments")
+def get_comments(post_id: int):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT *
+        FROM comments
+        WHERE post_id = ?
+        ORDER BY created_at ASC
+    """, (post_id,))
+
+    comments = [dict(row) for row in cursor.fetchall()]
+
+    connection.close()
+
+    return comments

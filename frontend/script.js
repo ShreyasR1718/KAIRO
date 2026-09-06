@@ -1,4 +1,5 @@
 const API_URL = "https://kairo-68s0.onrender.com";
+
 // =====================================================
 // KAIRO - Frontend JavaScript
 // =====================================================
@@ -212,7 +213,13 @@ function initializeVoting() {
             }
 
 
-            await sendVote(postId, change, voteCount, upvote, downvote);
+            await sendVote(
+                postId,
+                change,
+                voteCount,
+                upvote,
+                downvote
+            );
         });
 
 
@@ -253,7 +260,13 @@ function initializeVoting() {
             }
 
 
-            await sendVote(postId, change, voteCount, upvote, downvote);
+            await sendVote(
+                postId,
+                change,
+                voteCount,
+                upvote,
+                downvote
+            );
         });
     });
 }
@@ -271,10 +284,6 @@ async function sendVote(
     downvote
 ) {
 
-    // The API currently accepts only +1 or -1.
-    // For switching directly from upvote to downvote,
-    // we perform the operation twice.
-
     try {
 
         if (Math.abs(change) === 2) {
@@ -283,13 +292,16 @@ async function sendVote(
             const secondChange = firstChange;
 
             await sendSingleVote(postId, firstChange);
-            const result = await sendSingleVote(postId, secondChange);
+
+            const result =
+                await sendSingleVote(postId, secondChange);
 
             voteCount.textContent = result.votes;
 
         } else {
 
-            const result = await sendSingleVote(postId, change);
+            const result =
+                await sendSingleVote(postId, change);
 
             voteCount.textContent = result.votes;
         }
@@ -303,16 +315,6 @@ async function sendVote(
         } else {
             downvote.classList.add("voted");
             upvote.classList.remove("voted");
-        }
-
-        // If user clicked the already active button,
-        // remove its active state.
-        if (
-            (change === -1 && downvote.classList.contains("was-voted")) ||
-            (change === 1 && upvote.classList.contains("was-voted"))
-        ) {
-            upvote.classList.remove("voted");
-            downvote.classList.remove("voted");
         }
 
     } catch (error) {
@@ -502,8 +504,6 @@ function initializeMusic() {
             });
         });
 }
-
-
 // =====================================================
 // COMMENTS
 // =====================================================
@@ -530,6 +530,8 @@ function initializeComments() {
     }
 
 
+    // ---------- OPEN COMMENTS ----------
+
     document.querySelectorAll(".comment-button")
         .forEach(button => {
 
@@ -539,11 +541,32 @@ function initializeComments() {
 
             button.dataset.initialized = "true";
 
-            button.addEventListener("click", () => {
+            button.addEventListener("click", async () => {
+
+                const postCard =
+                    button.closest(".post-card");
+
+                const postId =
+                    postCard
+                        ? postCard.dataset.postId
+                        : "";
+
+                modal.dataset.postId = postId || "";
+
                 modal.classList.add("open");
+
+
+                // Database posts load comments
+                // from the KAIRO backend.
+
+                if (postId) {
+                    await loadComments(postId);
+                }
             });
         });
 
+
+    // ---------- CLOSE BUTTON ----------
 
     if (closeButton.dataset.initialized !== "true") {
 
@@ -552,7 +575,14 @@ function initializeComments() {
         closeButton.addEventListener("click", () => {
             modal.classList.remove("open");
         });
+    }
 
+
+    // ---------- CLICK OUTSIDE MODAL ----------
+
+    if (modal.dataset.initialized !== "true") {
+
+        modal.dataset.initialized = "true";
 
         modal.addEventListener("click", event => {
 
@@ -563,38 +593,7 @@ function initializeComments() {
     }
 
 
-    function addComment() {
-
-        if (!commentInput) return;
-
-        const text = commentInput.value.trim();
-
-        if (!text) return;
-
-        const comment =
-            document.createElement("div");
-
-        comment.className = "comment";
-
-        comment.innerHTML = `
-            <div class="comment-avatar">S</div>
-
-            <div class="comment-body">
-                <strong>Shreyas</strong>
-                <p>${escapeHTML(text)}</p>
-
-                <div class="comment-actions">
-                    <span>Just now</span>
-                    <button>Reply</button>
-                </div>
-            </div>
-        `;
-
-        commentsList.appendChild(comment);
-
-        commentInput.value = "";
-    }
-
+    // ---------- SEND COMMENT ----------
 
     if (
         sendButton &&
@@ -609,6 +608,8 @@ function initializeComments() {
         );
     }
 
+
+    // ---------- ENTER TO SEND ----------
 
     if (
         commentInput &&
@@ -625,7 +626,9 @@ function initializeComments() {
                     event.key === "Enter" &&
                     !event.shiftKey
                 ) {
+
                     event.preventDefault();
+
                     addComment();
                 }
             }
@@ -635,6 +638,246 @@ function initializeComments() {
 
 
 // =====================================================
+// LOAD COMMENTS FROM DATABASE
+// =====================================================
+
+async function loadComments(postId) {
+
+    const commentsList =
+        document.getElementById("commentsList");
+
+    if (!commentsList || !postId) {
+        return;
+    }
+
+
+    try {
+
+        const response = await fetch(
+            `${API_URL}/api/posts/${postId}/comments`
+        );
+
+
+        if (!response.ok) {
+            throw new Error(
+                "Failed to load comments"
+            );
+        }
+
+
+        const comments =
+            await response.json();
+
+
+        commentsList.innerHTML = "";
+
+
+        if (comments.length === 0) {
+
+            commentsList.innerHTML = `
+                <div class="empty-comments">
+                    No comments yet. Be the first to comment!
+                </div>
+            `;
+
+        } else {
+
+            comments.forEach(comment => {
+                renderComment(comment);
+            });
+        }
+
+
+        // Update comment count on the post.
+
+        const postCard =
+            document.querySelector(
+                `.post-card[data-post-id="${postId}"]`
+            );
+
+
+        if (postCard) {
+
+            const countElement =
+                postCard.querySelector(
+                    ".comment-count"
+                );
+
+
+            if (countElement) {
+                countElement.textContent =
+                    comments.length;
+            }
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Could not load comments:",
+            error
+        );
+
+
+        commentsList.innerHTML = `
+            <div class="empty-comments">
+                Unable to load comments.
+            </div>
+        `;
+    }
+}
+
+
+// =====================================================
+// RENDER DATABASE COMMENT
+// =====================================================
+
+function renderComment(comment) {
+
+    const commentsList =
+        document.getElementById("commentsList");
+
+    if (!commentsList) {
+        return;
+    }
+
+
+    const commentElement =
+        document.createElement("div");
+
+
+    commentElement.className = "comment";
+
+
+    const username =
+        escapeHTML(
+            comment.username || "Shreyas"
+        );
+
+
+    const content =
+        escapeHTML(
+            comment.content || ""
+        );
+
+
+    commentElement.innerHTML = `
+        <div class="comment-avatar">
+            ${username.charAt(0).toUpperCase()}
+        </div>
+
+        <div class="comment-body">
+
+            <strong>${username}</strong>
+
+            <p>${content}</p>
+
+            <div class="comment-actions">
+                <span>Just now</span>
+                <button type="button">Reply</button>
+            </div>
+
+        </div>
+    `;
+
+
+    commentsList.appendChild(
+        commentElement
+    );
+}
+
+
+// =====================================================
+// ADD COMMENT TO DATABASE
+// =====================================================
+
+async function addComment() {
+
+    const modal =
+        document.getElementById("commentsModal");
+
+
+    const commentInput =
+        document.getElementById("commentInput");
+
+
+    if (!modal || !commentInput) {
+        return;
+    }
+
+
+    const postId =
+        modal.dataset.postId;
+
+
+    const text =
+        commentInput.value.trim();
+
+
+    if (!text) {
+        return;
+    }
+
+
+    // The post must be a database post.
+
+    if (!postId) {
+        return;
+    }
+
+
+    try {
+
+        const response = await fetch(
+            `${API_URL}/api/posts/${postId}/comments`,
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+                    username: "Shreyas",
+                    content: text
+                })
+            }
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Failed to save comment"
+            );
+        }
+
+
+        // Clear input after successful save.
+
+        commentInput.value = "";
+
+
+        // Reload comments from the database.
+
+        await loadComments(postId);
+
+
+    } catch (error) {
+
+        console.error(
+            "Could not save comment:",
+            error
+        );
+
+
+        alert(
+            "Could not save your comment. Please try again."
+        );
+    }
+}
+// =====================================================
 // CREATE POST
 // =====================================================
 
@@ -643,32 +886,43 @@ function initializeCreatePost() {
     const modal =
         document.getElementById("createPostModal");
 
+
     const openButton =
         document.querySelector(".create-post-button");
+
 
     const closeButton =
         document.getElementById("closeCreatePost");
 
+
     const cancelButton =
         document.getElementById("cancelCreatePost");
+
 
     const submitButton =
         document.getElementById("submitCreatePost");
 
+
     const communityInput =
         document.getElementById("postCommunity");
+
 
     const titleInput =
         document.getElementById("postTitle");
 
+
     const contentInput =
         document.getElementById("postContent");
+
 
     const characterCount =
         document.getElementById("characterCount");
 
+
     if (!modal) return;
 
+
+    // ---------- OPEN MODAL ----------
 
     if (
         openButton &&
@@ -678,12 +932,16 @@ function initializeCreatePost() {
         openButton.dataset.initialized = "true";
 
         openButton.addEventListener("click", () => {
+
             modal.classList.add("open");
         });
     }
 
 
+    // ---------- CLOSE MODAL ----------
+
     function closeModal() {
+
         modal.classList.remove("open");
     }
 
@@ -702,6 +960,8 @@ function initializeCreatePost() {
     }
 
 
+    // ---------- CANCEL ----------
+
     if (
         cancelButton &&
         cancelButton.dataset.initialized !== "true"
@@ -716,7 +976,12 @@ function initializeCreatePost() {
     }
 
 
-    if (contentInput && characterCount) {
+    // ---------- CHARACTER COUNT ----------
+
+    if (
+        contentInput &&
+        characterCount
+    ) {
 
         contentInput.addEventListener(
             "input",
@@ -728,6 +993,8 @@ function initializeCreatePost() {
         );
     }
 
+
+    // ---------- PUBLISH POST ----------
 
     if (
         submitButton &&
@@ -745,10 +1012,12 @@ function initializeCreatePost() {
                         ? communityInput.value
                         : "Movies";
 
+
                 const title =
                     titleInput
                         ? titleInput.value.trim()
                         : "";
+
 
                 const content =
                     contentInput
@@ -757,12 +1026,17 @@ function initializeCreatePost() {
 
 
                 if (!title) {
-                    alert("Please enter a post title.");
+
+                    alert(
+                        "Please enter a post title."
+                    );
+
                     return;
                 }
 
 
                 submitButton.disabled = true;
+
                 submitButton.textContent =
                     "Publishing...";
 
@@ -791,6 +1065,7 @@ function initializeCreatePost() {
 
 
                     if (!response.ok) {
+
                         throw new Error(
                             "Could not create post"
                         );
@@ -800,19 +1075,24 @@ function initializeCreatePost() {
                     const result =
                         await response.json();
 
+
                     console.log(
                         "KAIRO post created:",
                         result
                     );
 
 
+                    // Clear form
+
                     if (titleInput) {
                         titleInput.value = "";
                     }
 
+
                     if (contentInput) {
                         contentInput.value = "";
                     }
+
 
                     if (characterCount) {
                         characterCount.textContent =
@@ -822,6 +1102,9 @@ function initializeCreatePost() {
 
                     closeModal();
 
+
+                    // Reload posts from database
+
                     await loadPosts();
 
 
@@ -829,10 +1112,12 @@ function initializeCreatePost() {
 
                     console.error(error);
 
+
                     alert(
                         "Could not publish the post. " +
                         "Make sure the KAIRO backend is running."
                     );
+
 
                 } finally {
 
@@ -855,18 +1140,23 @@ document.addEventListener("keydown", event => {
 
     if (event.key !== "Escape") return;
 
+
     const commentsModal =
         document.getElementById("commentsModal");
+
 
     const createPostModal =
         document.getElementById("createPostModal");
 
 
     if (commentsModal) {
+
         commentsModal.classList.remove("open");
     }
 
+
     if (createPostModal) {
+
         createPostModal.classList.remove("open");
     }
 });
@@ -878,9 +1168,12 @@ document.addEventListener("keydown", event => {
 
 function escapeHTML(value) {
 
-    const div = document.createElement("div");
+    const div =
+        document.createElement("div");
+
 
     div.textContent = value;
+
 
     return div.innerHTML;
 }
