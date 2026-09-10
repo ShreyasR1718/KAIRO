@@ -897,6 +897,170 @@
     </div>
 
 </div>
+<!-- Authentication Modal -->
+
+<div class="auth-modal" id="authModal">
+
+    <div class="auth-box">
+
+        <button
+            class="auth-close"
+            id="authClose"
+            aria-label="Close"
+        >
+            ×
+        </button>
+
+
+        <div class="auth-header">
+
+            <div class="auth-logo">
+                KAIRO
+            </div>
+
+            <h2 id="authTitle">
+                Welcome back
+            </h2>
+
+            <p id="authSubtitle">
+                Log in to continue to KAIRO.
+            </p>
+
+        </div>
+
+
+        <!-- Login Form -->
+
+        <form
+            id="loginForm"
+            class="auth-form"
+        >
+
+            <label for="loginEmail">
+                Email
+            </label>
+
+            <input
+                type="email"
+                id="loginEmail"
+                placeholder="you@example.com"
+                required
+            >
+
+
+            <label for="loginPassword">
+                Password
+            </label>
+
+            <input
+                type="password"
+                id="loginPassword"
+                placeholder="Enter your password"
+                required
+            >
+
+
+            <button
+                type="submit"
+                class="auth-submit"
+            >
+                Log in
+            </button>
+
+
+            <p class="auth-switch">
+
+                Don't have an account?
+
+                <button
+                    type="button"
+                    id="showSignup"
+                >
+                    Join KAIRO
+                </button>
+
+            </p>
+
+        </form>
+
+
+
+        <!-- Signup Form -->
+
+        <form
+            id="signupForm"
+            class="auth-form"
+            style="display: none;"
+        >
+
+            <label for="signupUsername">
+                Username
+            </label>
+
+            <input
+                type="text"
+                id="signupUsername"
+                placeholder="Choose a username"
+                required
+            >
+
+
+            <label for="signupEmail">
+                Email
+            </label>
+
+            <input
+                type="email"
+                id="signupEmail"
+                placeholder="you@example.com"
+                required
+            >
+
+
+            <label for="signupPassword">
+                Password
+            </label>
+
+            <input
+                type="password"
+                id="signupPassword"
+                placeholder="Create a password"
+                required
+            >
+
+
+            <button
+                type="submit"
+                class="auth-submit"
+            >
+                Create account
+            </button>
+
+
+            <p class="auth-switch">
+
+                Already have an account?
+
+                <button
+                    type="button"
+                    id="showLogin"
+                >
+                    Log in
+                </button>
+
+            </p>
+
+        </form>
+
+
+        <p
+            class="auth-message"
+            id="authMessage"
+        ></p>
+
+    </div>
+
+</div>
     <script src="script.js"></script>
 
 </body>

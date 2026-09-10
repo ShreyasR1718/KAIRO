@@ -1177,3 +1177,201 @@ function escapeHTML(value) {
 
     return div.innerHTML;
 }
+/* =========================
+   AUTHENTICATION
+   ========================= */
+
+const authModal = document.getElementById("authModal");
+const authClose = document.getElementById("authClose");
+
+const loginForm = document.getElementById("loginForm");
+const signupForm = document.getElementById("signupForm");
+
+const showSignup = document.getElementById("showSignup");
+const showLogin = document.getElementById("showLogin");
+
+const authTitle = document.getElementById("authTitle");
+const authSubtitle = document.getElementById("authSubtitle");
+const authMessage = document.getElementById("authMessage");
+
+function openAuthModal(mode = "login") {
+    if (!authModal) return;
+
+    authModal.style.display = "flex";
+    authMessage.textContent = "";
+
+    if (mode === "signup") {
+        loginForm.style.display = "none";
+        signupForm.style.display = "flex";
+
+        authTitle.textContent = "Join KAIRO";
+        authSubtitle.textContent = "Create your account and find your people.";
+    } else {
+        loginForm.style.display = "flex";
+        signupForm.style.display = "none";
+
+        authTitle.textContent = "Welcome back";
+        authSubtitle.textContent = "Log in to continue to KAIRO.";
+    }
+}
+
+function closeAuthModal() {
+    if (!authModal) return;
+    authModal.style.display = "none";
+    authMessage.textContent = "";
+}
+
+if (authModal) {
+    authModal.style.display = "none";
+}
+
+if (authClose) {
+    authClose.addEventListener("click", closeAuthModal);
+}
+
+if (showSignup) {
+    showSignup.addEventListener("click", () => {
+        openAuthModal("signup");
+    });
+}
+
+if (showLogin) {
+    showLogin.addEventListener("click", () => {
+        openAuthModal("login");
+    });
+}
+
+if (authModal) {
+    authModal.addEventListener("click", (event) => {
+        if (event.target === authModal) {
+            closeAuthModal();
+        }
+    });
+}
+
+const loginButton = document.getElementById("loginButton");
+const signupButton = document.getElementById("signupButton");
+const ctaSignupButton = document.getElementById("ctaSignupButton");
+
+if (loginButton) {
+    loginButton.addEventListener("click", () => {
+        openAuthModal("login");
+    });
+}
+
+if (signupButton) {
+    signupButton.addEventListener("click", () => {
+        openAuthModal("signup");
+    });
+}
+
+if (ctaSignupButton) {
+    ctaSignupButton.addEventListener("click", () => {
+        openAuthModal("signup");
+    });
+}
+
+/* ---------- Login ---------- */
+
+if (loginForm) {
+    loginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        authMessage.textContent = "Logging in...";
+
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value;
+
+        try {
+            const response = await fetch(`${API_URL}/api/auth/login`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || "Login failed");
+            }
+
+            localStorage.setItem("kairoUser", JSON.stringify(data));
+
+            authMessage.textContent = "Login successful!";
+
+            setTimeout(() => {
+                window.location.href = "app.html";
+            }, 500);
+
+        } catch (error) {
+            authMessage.textContent = error.message;
+        }
+    });
+}
+
+/* ---------- Signup ---------- */
+
+if (signupForm) {
+    signupForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        authMessage.textContent = "Creating account...";
+
+        const username = document.getElementById("signupUsername").value.trim();
+        const email = document.getElementById("signupEmail").value.trim();
+        const password = document.getElementById("signupPassword").value;
+
+        try {
+            const response = await fetch(`${API_URL}/api/auth/signup`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username: username,
+                    email: email,
+                    password: password
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || "Signup failed");
+            }
+
+            authMessage.textContent = "Account created! Logging you in...";
+
+            const loginResponse = await fetch(`${API_URL}/api/auth/login`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            });
+
+            const loginData = await loginResponse.json();
+
+            if (!loginResponse.ok) {
+                throw new Error(loginData.detail || "Account created, but login failed");
+            }
+
+            localStorage.setItem("kairoUser", JSON.stringify(loginData));
+
+            setTimeout(() => {
+                window.location.href = "app.html";
+            }, 500);
+
+        } catch (error) {
+            authMessage.textContent = error.message;
+        }
+    });
+}
