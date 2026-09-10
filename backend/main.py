@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from database import get_connection
 
+
 app = FastAPI(title="KAIRO API")
 
 
@@ -74,6 +75,22 @@ class PostCreate(BaseModel):
 
 class VoteUpdate(BaseModel):
     change: int
+
+
+class CommentCreate(BaseModel):
+    username: str
+    content: str
+
+
+class SignupRequest(BaseModel):
+    username: str
+    email: str
+    password: str
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 
 # ---------- Basic Routes ----------
@@ -182,15 +199,13 @@ def update_vote(post_id: int, vote: VoteUpdate):
         "post_id": post_id,
         "votes": new_votes
     }
+
+
 # ---------- Comments API ----------
-
-class CommentCreate(BaseModel):
-    username: str
-    content: str
-
 
 @app.post("/api/posts/{post_id}/comments")
 def create_comment(post_id: int, comment: CommentCreate):
+
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -231,6 +246,7 @@ def create_comment(post_id: int, comment: CommentCreate):
 
 @app.get("/api/posts/{post_id}/comments")
 def get_comments(post_id: int):
+
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -246,3 +262,87 @@ def get_comments(post_id: int):
     connection.close()
 
     return comments
+
+
+# ---------- Authentication API ----------
+
+@app.post("/api/auth/signup")
+def signup(user: SignupRequest):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    # Check whether username or email already exists
+    cursor.execute("""
+        SELECT id
+        FROM users
+        WHERE username = ? OR email = ?
+    """, (
+        user.username,
+        user.email
+    ))
+
+    existing_user = cursor.fetchone()
+
+    if existing_user is not None:
+        connection.close()
+
+        raise HTTPException(
+            status_code=400,
+            detail="Username or email already exists"
+        )
+
+    # Create account
+    cursor.execute("""
+        INSERT INTO users (username, email, password)
+        VALUES (?, ?, ?)
+    """, (
+        user.username,
+        user.email,
+        user.password
+    ))
+
+    connection.commit()
+
+    user_id = cursor.lastrowid
+
+    connection.close()
+
+    return {
+        "message": "Account created successfully",
+        "user_id": user_id,
+        "username": user.username
+    }
+
+
+@app.post("/api/auth/login")
+def login(user: LoginRequest):
+
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT id, username, email
+        FROM users
+        WHERE email = ? AND password = ?
+    """, (
+        user.email,
+        user.password
+    ))
+
+    existing_user = cursor.fetchone()
+
+    connection.close()
+
+    if existing_user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password"
+        )
+
+    return {
+        "message": "Login successful",
+        "user_id": existing_user["id"],
+        "username": existing_user["username"],
+        "email": existing_user["email"]
+    }
