@@ -839,7 +839,7 @@ async function addComment() {
                 },
 
                 body: JSON.stringify({
-                    username: "Shreyas",
+                    username: getLoggedInUsername(),
                     content: text
                 })
             }
@@ -1055,7 +1055,7 @@ function initializeCreatePost() {
                                 },
 
                                 body: JSON.stringify({
-                                    username: "shreyas",
+                                    username: getLoggedInUsername(),
                                     community: community,
                                     title: title,
                                     content: content
@@ -1374,6 +1374,24 @@ if (signupForm) {
             authMessage.textContent = error.message;
         }
     });
+}
+/* =========================
+   CURRENT USER HELPER
+   ========================= */
+
+function getLoggedInUsername() {
+    try {
+        const user = JSON.parse(localStorage.getItem("kairoUser"));
+
+        if (user && user.username) {
+            return user.username;
+        }
+
+        return "";
+    } catch (error) {
+        console.error("Could not read KAIRO user session:", error);
+        return "";
+    }
 }
 /* =========================
    DISPLAY LOGGED-IN USER
