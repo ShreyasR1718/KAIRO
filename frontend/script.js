@@ -1385,6 +1385,11 @@ if (kairoUser) {
 
     const profileName = document.querySelector(".profile-name");
     const profileAvatar = document.querySelector(".mini-avatar");
+    const welcomeMessage = document.querySelector("#welcomeMessage");
+
+if (welcomeMessage) {
+    welcomeMessage.textContent = `Good evening, ${kairoUser.username}.`;
+}
 
     if (profileName) {
         profileName.textContent = kairoUser.username;
