@@ -1401,3 +1401,38 @@ if (welcomeMessage) {
             : "S";
     }
 }
+/* =========================
+   PROFILE MENU + LOGOUT
+   ========================= */
+
+const profileButton = document.querySelector(".profile-button");
+const profileMenu = document.getElementById("profileMenu");
+const logoutButton = document.getElementById("logoutButton");
+
+if (profileMenu) {
+    profileMenu.style.display = "none";
+}
+
+if (profileButton && profileMenu) {
+    profileButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+
+        profileMenu.style.display =
+            profileMenu.style.display === "none"
+                ? "block"
+                : "none";
+    });
+}
+
+if (logoutButton) {
+    logoutButton.addEventListener("click", () => {
+        localStorage.removeItem("kairoUser");
+        window.location.href = "index.html";
+    });
+}
+
+document.addEventListener("click", () => {
+    if (profileMenu) {
+        profileMenu.style.display = "none";
+    }
+});

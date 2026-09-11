@@ -2435,3 +2435,40 @@ footer {
     color: #ff6b6b;
     font-size: 13px;
 }
+/* =========================
+   PROFILE MENU
+   ========================= */
+
+.app-actions {
+    position: relative;
+}
+
+.profile-menu {
+    display: none;
+    position: absolute;
+    top: 52px;
+    right: 0;
+    min-width: 130px;
+    padding: 6px;
+    background: #18171f;
+    border: 1px solid #302d3a;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    z-index: 1000;
+}
+
+.profile-menu button {
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: #ffffff;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.profile-menu button:hover {
+    background: #292635;
+}
