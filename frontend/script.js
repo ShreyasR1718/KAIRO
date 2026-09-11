@@ -1375,3 +1375,24 @@ if (signupForm) {
         }
     });
 }
+/* =========================
+   DISPLAY LOGGED-IN USER
+   ========================= */
+
+const kairoUser = JSON.parse(localStorage.getItem("kairoUser"));
+
+if (kairoUser) {
+
+    const profileName = document.querySelector(".profile-name");
+    const profileAvatar = document.querySelector(".mini-avatar");
+
+    if (profileName) {
+        profileName.textContent = kairoUser.username;
+    }
+
+    if (profileAvatar) {
+        profileAvatar.textContent = kairoUser.username
+            ? kairoUser.username.charAt(0).toUpperCase()
+            : "S";
+    }
+}
