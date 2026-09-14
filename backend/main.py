@@ -57,6 +57,17 @@ def create_tables():
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS post_votes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            post_id INTEGER NOT NULL,
+            username TEXT NOT NULL,
+            vote_type INTEGER NOT NULL,
+            UNIQUE(post_id, username),
+            FOREIGN KEY (post_id) REFERENCES posts(id)
+        )
+    """)
+
     connection.commit()
     connection.close()
 
@@ -75,6 +86,7 @@ class PostCreate(BaseModel):
 
 class VoteUpdate(BaseModel):
     change: int
+    username: str
 
 
 class CommentCreate(BaseModel):
@@ -161,18 +173,92 @@ def get_posts():
 
 @app.patch("/api/posts/{post_id}/vote")
 def update_vote(post_id: int, vote: VoteUpdate):
-
-    if vote.change not in (-1, 1):
+    if vote.change not in (-2, -1, 1, 2):
         raise HTTPException(
             status_code=400,
-            detail="Vote change must be 1 or -1"
+            detail="Invalid vote change"
         )
 
     connection = get_connection()
     cursor = connection.cursor()
 
     cursor.execute(
+        "SELECT id FROM posts WHERE id = ?",
+        (post_id,)
+    )
+
+    if cursor.fetchone() is None:
+        connection.close()
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    username = vote.username
+
+    cursor.execute("""
+        SELECT vote_type
+        FROM post_votes
+        WHERE post_id = ? AND username = ?
+    """, (post_id, username))
+
+    existing_vote = cursor.fetchone()
+    old_vote = existing_vote["vote_type"] if existing_vote else 0
+
+    if vote.change == 1:
+        new_vote = 0 if old_vote == 1 else 1
+    elif vote.change == -1:
+        new_vote = 0 if old_vote == -1 else -1
+    elif vote.change == 2:
+        new_vote = 1
+    else:
+        new_vote = -1
+
+    difference = new_vote - old_vote
+
+    if existing_vote is None:
+        if new_vote != 0:
+            cursor.execute("""
+                INSERT INTO post_votes (post_id, username, vote_type)
+                VALUES (?, ?, ?)
+            """, (post_id, username, new_vote))
+    elif new_vote == 0:
+        cursor.execute("""
+            DELETE FROM post_votes
+            WHERE post_id = ? AND username = ?
+        """, (post_id, username))
+    else:
+        cursor.execute("""
+            UPDATE post_votes
+            SET vote_type = ?
+            WHERE post_id = ? AND username = ?
+        """, (new_vote, post_id, username))
+
+    cursor.execute("""
+        UPDATE posts
+        SET votes = votes + ?
+        WHERE id = ?
+    """, (difference, post_id))
+
+    connection.commit()
+
+    cursor.execute(
         "SELECT votes FROM posts WHERE id = ?",
+        (post_id,)
+    )
+
+    updated_post = cursor.fetchone()
+    connection.close()
+
+    return {
+        "post_id": post_id,
+        "votes": updated_post["votes"]
+    }
+
+@app.get("/api/posts/{post_id}/vote")
+def get_user_vote(post_id: int, username: str):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        "SELECT id FROM posts WHERE id = ?",
         (post_id,)
     )
 
@@ -185,19 +271,23 @@ def update_vote(post_id: int, vote: VoteUpdate):
             detail="Post not found"
         )
 
-    new_votes = post["votes"] + vote.change
+    cursor.execute("""
+        SELECT vote_type
+        FROM post_votes
+        WHERE post_id = ? AND username = ?
+    """, (
+        post_id,
+        username
+    ))
 
-    cursor.execute(
-        "UPDATE posts SET votes = ? WHERE id = ?",
-        (new_votes, post_id)
-    )
+    vote = cursor.fetchone()
 
-    connection.commit()
     connection.close()
 
     return {
         "post_id": post_id,
-        "votes": new_votes
+        "username": username,
+        "vote": vote["vote_type"] if vote else 0
     }
 
 
@@ -205,7 +295,6 @@ def update_vote(post_id: int, vote: VoteUpdate):
 
 @app.post("/api/posts/{post_id}/comments")
 def create_comment(post_id: int, comment: CommentCreate):
-
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -246,7 +335,6 @@ def create_comment(post_id: int, comment: CommentCreate):
 
 @app.get("/api/posts/{post_id}/comments")
 def get_comments(post_id: int):
-
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -268,11 +356,9 @@ def get_comments(post_id: int):
 
 @app.post("/api/auth/signup")
 def signup(user: SignupRequest):
-
     connection = get_connection()
     cursor = connection.cursor()
 
-    # Check whether username or email already exists
     cursor.execute("""
         SELECT id
         FROM users
@@ -292,7 +378,6 @@ def signup(user: SignupRequest):
             detail="Username or email already exists"
         )
 
-    # Create account
     cursor.execute("""
         INSERT INTO users (username, email, password)
         VALUES (?, ?, ?)
@@ -317,7 +402,6 @@ def signup(user: SignupRequest):
 
 @app.post("/api/auth/login")
 def login(user: LoginRequest):
-
     connection = get_connection()
     cursor = connection.cursor()
 

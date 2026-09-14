@@ -162,27 +162,46 @@ function getCommunityIcon(community) {
 // =====================================================
 
 function initializeVoting() {
-    document.querySelectorAll(".post-card").forEach(post => {
-
+    document.querySelectorAll(".post-card").forEach(async post => {
         const upvote = post.querySelector(".upvote");
         const downvote = post.querySelector(".downvote");
         const voteCount = post.querySelector(".vote-count");
 
         if (!upvote || !downvote || !voteCount) return;
-
         if (upvote.dataset.initialized === "true") return;
 
         upvote.dataset.initialized = "true";
         downvote.dataset.initialized = "true";
 
+        const postId = post.dataset.postId;
+        const username = getLoggedInUsername();
+
+        // Restore the user's saved vote after refresh
+        if (postId && username) {
+            try {
+                const response = await fetch(
+                    `${API_URL}/api/posts/${postId}/vote?username=${encodeURIComponent(username)}`
+                );
+
+                if (response.ok) {
+                    const result = await response.json();
+
+                    if (result.vote === 1) {
+                        upvote.classList.add("voted");
+                        downvote.classList.remove("voted");
+                    } else if (result.vote === -1) {
+                        downvote.classList.add("voted");
+                        upvote.classList.remove("voted");
+                    }
+                }
+            } catch (error) {
+                console.error("Could not restore vote:", error);
+            }
+        }
 
         // ---------- UPVOTE ----------
 
         upvote.addEventListener("click", async () => {
-
-            const postId = post.dataset.postId;
-
-            // Static prototype posts still work locally
             if (!postId) {
                 let count = parseInt(voteCount.textContent) || 0;
 
@@ -203,7 +222,6 @@ function initializeVoting() {
                 return;
             }
 
-
             let change = 1;
 
             if (upvote.classList.contains("voted")) {
@@ -211,7 +229,6 @@ function initializeVoting() {
             } else if (downvote.classList.contains("voted")) {
                 change = 2;
             }
-
 
             await sendVote(
                 postId,
@@ -222,14 +239,9 @@ function initializeVoting() {
             );
         });
 
-
         // ---------- DOWNVOTE ----------
 
         downvote.addEventListener("click", async () => {
-
-            const postId = post.dataset.postId;
-
-            // Static prototype posts still work locally
             if (!postId) {
                 let count = parseInt(voteCount.textContent) || 0;
 
@@ -250,7 +262,6 @@ function initializeVoting() {
                 return;
             }
 
-
             let change = -1;
 
             if (downvote.classList.contains("voted")) {
@@ -258,7 +269,6 @@ function initializeVoting() {
             } else if (upvote.classList.contains("voted")) {
                 change = -2;
             }
-
 
             await sendVote(
                 postId,
@@ -270,7 +280,6 @@ function initializeVoting() {
         });
     });
 }
-
 
 // =====================================================
 // SEND VOTE TO BACKEND
@@ -320,7 +329,6 @@ async function sendVote(
 // =====================================================
 
 async function sendSingleVote(postId, change) {
-
     const response = await fetch(
         `${API_URL}/api/posts/${postId}/vote`,
         {
@@ -331,7 +339,8 @@ async function sendSingleVote(postId, change) {
             },
 
             body: JSON.stringify({
-                change: change
+                change: change,
+                username: getLoggedInUsername()
             })
         }
     );
@@ -342,7 +351,6 @@ async function sendSingleVote(postId, change) {
 
     return await response.json();
 }
-
 
 // =====================================================
 // SAVE POSTS
