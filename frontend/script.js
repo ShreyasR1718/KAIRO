@@ -309,14 +309,21 @@ async function sendVote(
 
         // Update button state
 
-        if (change > 0) {
-            upvote.classList.add("voted");
-            downvote.classList.remove("voted");
-        } else {
-            downvote.classList.add("voted");
-            upvote.classList.remove("voted");
-        }
+      // Update button state
 
+if (change === 1) {
+    upvote.classList.add("voted");
+    downvote.classList.remove("voted");
+} else if (change === -1) {
+    upvote.classList.remove("voted");
+    downvote.classList.remove("voted");
+} else if (change === 2) {
+    upvote.classList.add("voted");
+    downvote.classList.remove("voted");
+} else if (change === -2) {
+    downvote.classList.add("voted");
+    upvote.classList.remove("voted");
+}
     } catch (error) {
         console.error("Vote failed:", error);
         alert("Could not update vote.");
