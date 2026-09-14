@@ -283,53 +283,37 @@ async function sendVote(
     upvote,
     downvote
 ) {
-
     try {
+        const result = await sendSingleVote(postId, change);
 
-        if (Math.abs(change) === 2) {
+        voteCount.textContent = result.votes;
 
-            const firstChange = change > 0 ? 1 : -1;
-            const secondChange = firstChange;
-
-            await sendSingleVote(postId, firstChange);
-
-            const result =
-                await sendSingleVote(postId, secondChange);
-
-            voteCount.textContent = result.votes;
-
-        } else {
-
-            const result =
-                await sendSingleVote(postId, change);
-
-            voteCount.textContent = result.votes;
+        if (change === 1) {
+            if (downvote.classList.contains("voted")) {
+                downvote.classList.remove("voted");
+            } else {
+                upvote.classList.add("voted");
+                downvote.classList.remove("voted");
+            }
+        } else if (change === -1) {
+            if (upvote.classList.contains("voted")) {
+                upvote.classList.remove("voted");
+            } else {
+                downvote.classList.add("voted");
+                upvote.classList.remove("voted");
+            }
+        } else if (change === 2) {
+            upvote.classList.add("voted");
+            downvote.classList.remove("voted");
+        } else if (change === -2) {
+            downvote.classList.add("voted");
+            upvote.classList.remove("voted");
         }
-
-
-        // Update button state
-
-      // Update button state
-
-if (change === 1) {
-    upvote.classList.add("voted");
-    downvote.classList.remove("voted");
-} else if (change === -1) {
-    upvote.classList.remove("voted");
-    downvote.classList.remove("voted");
-} else if (change === 2) {
-    upvote.classList.add("voted");
-    downvote.classList.remove("voted");
-} else if (change === -2) {
-    downvote.classList.add("voted");
-    upvote.classList.remove("voted");
-}
     } catch (error) {
         console.error("Vote failed:", error);
         alert("Could not update vote.");
     }
 }
-
 
 // =====================================================
 // SINGLE VOTE REQUEST
