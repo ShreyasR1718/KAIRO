@@ -7,6 +7,7 @@ const API_URL = "https://kairo-68s0.onrender.com";
 document.addEventListener("DOMContentLoaded", () => {
     initializeVoting();
     initializeSaving();
+    initializePostMenus();
     initializeTabs();
     initializeSearch();
     initializeCommunityButtons();
@@ -74,6 +75,12 @@ function createPostElement(post) {
 
     const communityIcon = getCommunityIcon(post.community);
 
+    const loggedInUsername = getLoggedInUsername();
+
+    const isOwnPost =
+        loggedInUsername &&
+        loggedInUsername === post.username;
+
     article.innerHTML = `
         <div class="post-top">
             <div class="post-community">
@@ -87,7 +94,13 @@ function createPostElement(post) {
                 </div>
             </div>
 
-            <button class="post-menu" aria-label="Post menu">•••</button>
+            <button
+                class="post-menu"
+                aria-label="Post menu"
+                type="button"
+            >
+                •••
+            </button>
         </div>
 
         <div class="post-content">
@@ -107,13 +120,21 @@ function createPostElement(post) {
         <div class="post-actions">
 
             <div class="vote-group">
-                <button class="vote-button upvote" aria-label="Upvote">
+                <button
+                    class="vote-button upvote"
+                    aria-label="Upvote"
+                >
                     ▲
                 </button>
 
-                <span class="vote-count">${post.votes || 0}</span>
+                <span class="vote-count">
+                    ${post.votes || 0}
+                </span>
 
-                <button class="vote-button downvote" aria-label="Downvote">
+                <button
+                    class="vote-button downvote"
+                    aria-label="Downvote"
+                >
                     ▼
                 </button>
             </div>
@@ -138,7 +159,6 @@ function createPostElement(post) {
 
     return article;
 }
-
 
 // =====================================================
 // COMMUNITY ICONS
@@ -375,6 +395,83 @@ function initializeSaving() {
                         ? "Saved"
                         : "Save";
             }
+        });
+    });
+}
+function initializePostMenus() {
+    document.querySelectorAll(".post-menu").forEach(button => {
+
+        if (button.dataset.initialized === "true") return;
+
+        button.dataset.initialized = "true";
+
+        button.addEventListener("click", (event) => {
+            event.stopPropagation();
+
+            const postCard =
+                button.closest(".post-card");
+
+            if (!postCard) return;
+
+            const postId =
+                postCard.dataset.postId;
+
+            const existingMenu =
+                postCard.querySelector(".post-menu-dropdown");
+
+            if (existingMenu) {
+                existingMenu.remove();
+                return;
+            }
+
+            const menu =
+                document.createElement("div");
+
+            menu.className =
+                "post-menu-dropdown";
+
+            const postUsername =
+                postCard.querySelector(
+                    ".post-community-info span"
+                );
+
+            const loggedInUsername =
+                getLoggedInUsername();
+
+            const usernameText =
+                postUsername
+                    ? postUsername.textContent
+                    : "";
+
+            const postOwner =
+                usernameText
+                    .replace("@", "")
+                    .split(" · ")[0]
+                    .trim();
+
+            const isOwnPost =
+                loggedInUsername &&
+                loggedInUsername === postOwner;
+
+            if (isOwnPost) {
+                menu.innerHTML = `
+                    <button class="edit-post-option">
+                        Edit
+                    </button>
+
+                    <button class="delete-post-option">
+                        Delete
+                    </button>
+                `;
+            } else {
+                menu.innerHTML = `
+                    <div class="no-post-actions">
+                        No actions available
+                    </div>
+                `;
+            }
+
+            postCard.appendChild(menu);
         });
     });
 }
