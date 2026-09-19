@@ -1206,13 +1206,24 @@ footer {
 }
 
 .post-top {
-    display: flex;
+    display: flex !important;
     align-items: center;
+    justify-content: space-between;
+    width: 100%;
     gap: 10px;
-
     margin-bottom: 17px;
 }
 
+.post-community {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.post-menu {
+    margin-left: auto !important;
+    flex-shrink: 0;
+}
 .post-community-icon {
     width: 36px;
     height: 36px;
@@ -1234,9 +1245,13 @@ footer {
 .gaming-icon {
     background: rgba(110, 231, 255, 0.08);
 }
-
+.post-community {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 .post-community-info {
-    flex: 1;
+    
 }
 
 .post-community-info strong {
@@ -1266,8 +1281,9 @@ footer {
     color: #686b78;
 
     font-size: 13px;
-}
 
+    margin-left: auto;
+}
 .post-menu:hover {
     color: var(--text);
 }
