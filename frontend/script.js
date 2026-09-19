@@ -8,12 +8,10 @@ document.addEventListener("DOMContentLoaded", () => {
     initializeVoting();
     initializeSaving();
     initializeComments();
-    initializePostMenus();
     initializeTabs();
     initializeSearch();
     initializeCommunityButtons();
     initializeMusic();
-    initializeComments();
     initializeCreatePost();
 
     loadPosts();
@@ -53,10 +51,10 @@ async function loadPosts() {
                 feed.appendChild(postElement);
             }
         });
-
-        initializeVoting();
-        initializeSaving();
-        initializeComments();
+            initializeVoting();
+            initializeSaving();
+            initializeComments();
+            initializePostMenus();
 
     } catch (error) {
         console.error("Could not load KAIRO posts:", error);
