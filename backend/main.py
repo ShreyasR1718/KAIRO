@@ -83,6 +83,14 @@ class PostCreate(BaseModel):
     title: str
     content: str = ""
 
+class PostUpdate(BaseModel):
+
+    username: str
+
+    title: str
+
+    content: str = ""
+
 
 class VoteUpdate(BaseModel):
     change: int
@@ -147,6 +155,51 @@ def create_post(post: PostCreate):
 
     return {
         "message": "Post created successfully",
+        "post_id": post_id
+    }
+
+@app.patch("/api/posts/{post_id}")
+def update_post(post_id: int, post: PostUpdate):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT username
+        FROM posts
+        WHERE id = ?
+    """, (post_id,))
+
+    existing_post = cursor.fetchone()
+
+    if existing_post is None:
+        connection.close()
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found"
+        )
+
+    if existing_post["username"] != post.username:
+        connection.close()
+        raise HTTPException(
+            status_code=403,
+            detail="You can only edit your own post"
+        )
+
+    cursor.execute("""
+        UPDATE posts
+        SET title = ?, content = ?
+        WHERE id = ?
+    """, (
+        post.title,
+        post.content,
+        post_id
+    ))
+
+    connection.commit()
+    connection.close()
+
+    return {
+        "message": "Post updated successfully",
         "post_id": post_id
     }
 
