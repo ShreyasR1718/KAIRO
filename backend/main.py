@@ -203,6 +203,45 @@ def update_post(post_id: int, post: PostUpdate):
         "post_id": post_id
     }
 
+@app.delete("/api/posts/{post_id}")
+def delete_post(post_id: int, username: str):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT username
+        FROM posts
+        WHERE id = ?
+    """, (post_id,))
+
+    existing_post = cursor.fetchone()
+
+    if existing_post is None:
+        connection.close()
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found"
+        )
+
+    if existing_post["username"] != username:
+        connection.close()
+        raise HTTPException(
+            status_code=403,
+            detail="You can only delete your own post"
+        )
+
+    cursor.execute("""
+        DELETE FROM posts
+        WHERE id = ?
+    """, (post_id,))
+
+    connection.commit()
+    connection.close()
+
+    return {
+        "message": "Post deleted successfully",
+        "post_id": post_id
+    }
 
 @app.get("/api/posts")
 def get_posts():
