@@ -7,6 +7,7 @@ const API_URL = "https://kairo-68s0.onrender.com";
 document.addEventListener("DOMContentLoaded", () => {
     initializeVoting();
     initializeSaving();
+    initializeComments();
     initializePostMenus();
     initializeTabs();
     initializeSearch();
