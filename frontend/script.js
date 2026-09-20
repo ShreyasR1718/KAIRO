@@ -417,28 +417,124 @@ async function sendSingleVote(postId, change) {
 // SAVE POSTS
 // =====================================================
 
-function initializeSaving() {
+async function initializeSaving() {
     document.querySelectorAll(".save-button").forEach(button => {
 
         if (button.dataset.initialized === "true") return;
 
         button.dataset.initialized = "true";
 
-        button.addEventListener("click", () => {
+        const postCard = button.closest(".post-card");
 
-            button.classList.toggle("saved");
+        if (!postCard) return;
 
-            const text = button.querySelector("span");
+        const postId = postCard.dataset.postId;
 
-            if (text) {
-                text.textContent =
-                    button.classList.contains("saved")
-                        ? "Saved"
-                        : "Save";
+        const username = getLoggedInUsername();
+
+        if (!username || !postId) return;
+
+        const text = button.querySelector("span");
+
+        // Check whether this post is already saved
+        fetch(
+            `${API_URL}/api/posts/${postId}/save?username=${encodeURIComponent(username)}`
+        )
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to get saved status");
+                }
+
+                return response.json();
+            })
+            .then(data => {
+
+                if (data.saved) {
+                    button.classList.add("saved");
+
+                    if (text) {
+                        text.textContent = "Saved";
+                    }
+                }
+
+            })
+            .catch(error => {
+                console.error(
+                    "Could not get saved status:",
+                    error
+                );
+            });
+
+        button.addEventListener("click", async () => {
+
+            const isSaved =
+                button.classList.contains("saved");
+
+            try {
+
+                let response;
+
+                if (isSaved) {
+
+                    // Unsave the post
+                    response = await fetch(
+                        `${API_URL}/api/posts/${postId}/save?username=${encodeURIComponent(username)}`,
+                        {
+                            method: "DELETE"
+                        }
+                    );
+
+                } else {
+
+                    // Save the post
+                    response = await fetch(
+                        `${API_URL}/api/posts/${postId}/save?username=${encodeURIComponent(username)}`,
+                        {
+                            method: "POST"
+                        }
+                    );
+                }
+
+                if (!response.ok) {
+                    throw new Error(
+                        "Failed to update saved status"
+                    );
+                }
+
+                const data = await response.json();
+
+                if (data.saved) {
+
+                    button.classList.add("saved");
+
+                    if (text) {
+                        text.textContent = "Saved";
+                    }
+
+                } else {
+
+                    button.classList.remove("saved");
+
+                    if (text) {
+                        text.textContent = "Save";
+                    }
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "Could not update saved status:",
+                    error
+                );
+
+                alert(
+                    "Could not update the saved status. Please try again."
+                );
             }
         });
     });
 }
+
 function initializePostMenus() {
     document.querySelectorAll(".post-menu").forEach(button => {
 

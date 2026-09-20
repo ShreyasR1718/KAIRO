@@ -67,7 +67,15 @@ def create_tables():
             FOREIGN KEY (post_id) REFERENCES posts(id)
         )
     """)
-
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS saved_posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            post_id INTEGER NOT NULL,
+            username TEXT NOT NULL,
+            UNIQUE(post_id, username),
+            FOREIGN KEY (post_id) REFERENCES posts(id)
+        )
+    """)
     connection.commit()
     connection.close()
 
@@ -260,7 +268,95 @@ def get_posts():
 
     return posts
 
+@app.post("/api/posts/{post_id}/save")
+def save_post(post_id: int, username: str):
+    connection = get_connection()
+    cursor = connection.cursor()
 
+    cursor.execute("""
+        SELECT id
+        FROM posts
+        WHERE id = ?
+    """, (post_id,))
+
+    post = cursor.fetchone()
+
+    if post is None:
+        connection.close()
+        raise HTTPException(
+            status_code=404,
+            detail="Post not found"
+        )
+
+    cursor.execute("""
+        SELECT id
+        FROM saved_posts
+        WHERE post_id = ? AND username = ?
+    """, (post_id, username))
+
+    existing_save = cursor.fetchone()
+
+    if existing_save:
+        connection.close()
+        return {
+            "message": "Post already saved",
+            "saved": True
+        }
+
+    cursor.execute("""
+        INSERT INTO saved_posts (post_id, username)
+        VALUES (?, ?)
+    """, (post_id, username))
+
+    connection.commit()
+    connection.close()
+
+    return {
+        "message": "Post saved successfully",
+        "saved": True
+    }
+
+
+@app.delete("/api/posts/{post_id}/save")
+def unsave_post(post_id: int, username: str):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        DELETE FROM saved_posts
+        WHERE post_id = ? AND username = ?
+    """, (post_id, username))
+
+    connection.commit()
+
+    connection.close()
+
+    return {
+        "message": "Post unsaved successfully",
+        "saved": False
+    }
+
+
+@app.get("/api/posts/{post_id}/save")
+def get_saved_status(post_id: int, username: str):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT id
+        FROM saved_posts
+        WHERE post_id = ? AND username = ?
+    """, (post_id, username))
+
+    saved = cursor.fetchone()
+
+    connection.close()
+
+    return {
+        "post_id": post_id,
+        "username": username,
+        "saved": bool(saved)
+    }
 # ---------- Voting API ----------
 
 @app.patch("/api/posts/{post_id}/vote")
