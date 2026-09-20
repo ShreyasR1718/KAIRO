@@ -2524,6 +2524,6 @@ footer {
     color: var(--muted);
     font-size: 12px;
 }
-.post-top {
+.post-card {
     position: relative;
 }
