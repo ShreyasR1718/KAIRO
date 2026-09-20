@@ -453,6 +453,7 @@ function initializePostMenus() {
                 loggedInUsername === postOwner;
 
             if (isOwnPost) {
+
                 menu.innerHTML = `
                     <button class="edit-post-option">
                         Edit
@@ -462,7 +463,147 @@ function initializePostMenus() {
                         Delete
                     </button>
                 `;
+
+                const editButton =
+                    menu.querySelector(".edit-post-option");
+
+                editButton.addEventListener("click", async () => {
+
+                    const titleElement =
+                        postCard.querySelector(".post-content h2");
+
+                    const contentElement =
+                        postCard.querySelector(".post-content p");
+
+                    const currentTitle =
+                        titleElement
+                            ? titleElement.textContent
+                            : "";
+
+                    const currentContent =
+                        contentElement
+                            ? contentElement.textContent
+                            : "";
+
+                    const newTitle =
+                        prompt(
+                            "Edit post title:",
+                            currentTitle
+                        );
+
+                    if (newTitle === null) {
+                        return;
+                    }
+
+                    if (!newTitle.trim()) {
+                        alert("Title cannot be empty.");
+                        return;
+                    }
+
+                    const newContent =
+                        prompt(
+                            "Edit post content:",
+                            currentContent
+                        );
+
+                    if (newContent === null) {
+                        return;
+                    }
+
+                    try {
+
+                        const response =
+                            await fetch(
+                                `${API_URL}/api/posts/${postId}`,
+                                {
+                                    method: "PATCH",
+                                    headers: {
+                                        "Content-Type":
+                                            "application/json"
+                                    },
+                                    body: JSON.stringify({
+                                        username:
+                                            loggedInUsername,
+                                        title:
+                                            newTitle.trim(),
+                                        content:
+                                            newContent.trim()
+                                    })
+                                }
+                            );
+
+                        if (!response.ok) {
+                            throw new Error(
+                                "Failed to update post"
+                            );
+                        }
+
+                        menu.remove();
+
+                        await loadPosts();
+
+                    } catch (error) {
+
+                        console.error(
+                            "Could not edit post:",
+                            error
+                        );
+
+                        alert(
+                            "Could not edit the post. Please try again."
+                        );
+                    }
+                });
+
+                const deleteButton =
+                    menu.querySelector(".delete-post-option");
+
+                deleteButton.addEventListener("click", async () => {
+
+                    const confirmed =
+                        confirm(
+                            "Are you sure you want to delete this post?"
+                        );
+
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    try {
+
+                        const response =
+                            await fetch(
+                                `${API_URL}/api/posts/${postId}?username=${encodeURIComponent(loggedInUsername)}`,
+                                {
+                                    method: "DELETE"
+                                }
+                            );
+
+                        if (!response.ok) {
+                            throw new Error(
+                                "Failed to delete post"
+                            );
+                        }
+
+                        menu.remove();
+
+                        await loadPosts();
+
+                    } catch (error) {
+
+                        console.error(
+                            "Could not delete post:",
+                            error
+                        );
+
+                        alert(
+                            "Could not delete the post. Please try again."
+                        );
+                    }
+                });
+
             } else {
+
                 menu.innerHTML = `
                     <div class="no-post-actions">
                         No actions available
