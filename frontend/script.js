@@ -66,6 +66,48 @@ async function loadPosts() {
 // CREATE DATABASE POST ELEMENT
 // =====================================================
 
+function formatPostTime(createdAt) {
+    if (!createdAt) {
+        return "just now";
+    }
+
+    const postDate =
+        new Date(createdAt.replace(" ", "T") + "Z");
+
+    const now = new Date();
+
+    const difference =
+        Math.floor(
+            (now - postDate) / 1000
+        );
+
+    if (difference < 60) {
+        return "just now";
+    }
+
+    const minutes =
+        Math.floor(difference / 60);
+
+    if (minutes < 60) {
+        return `${minutes}m ago`;
+    }
+
+    const hours =
+        Math.floor(minutes / 60);
+
+    if (hours < 24) {
+        return `${hours}h ago`;
+    }
+
+    const days =
+        Math.floor(hours / 24);
+
+    if (days < 7) {
+        return `${days}d ago`;
+    }
+
+    return postDate.toLocaleDateString();
+}
 function createPostElement(post) {
     const article = document.createElement("article");
 
@@ -89,7 +131,7 @@ function createPostElement(post) {
 
                 <div class="post-community-info">
                     <strong>${escapeHTML(post.community)}</strong>
-                    <span>@${escapeHTML(post.username)} · just now</span>
+                    <span>@${escapeHTML(post.username)} · ${formatPostTime(post.created_at)}</span>
                 </div>
             </div>
 
