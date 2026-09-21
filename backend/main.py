@@ -336,7 +336,6 @@ def unsave_post(post_id: int, username: str):
         "saved": False
     }
 
-
 @app.get("/api/posts/{post_id}/save")
 def get_saved_status(post_id: int, username: str):
     connection = get_connection()
@@ -357,6 +356,26 @@ def get_saved_status(post_id: int, username: str):
         "username": username,
         "saved": bool(saved)
     }
+
+@app.get("/api/saved-posts")
+def get_saved_posts(username: str):
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT posts.*
+        FROM posts
+        INNER JOIN saved_posts
+            ON posts.id = saved_posts.post_id
+        WHERE saved_posts.username = ?
+        ORDER BY posts.created_at DESC
+    """, (username,))
+
+    posts = [dict(row) for row in cursor.fetchall()]
+
+    connection.close()
+
+    return posts
 # ---------- Voting API ----------
 
 @app.patch("/api/posts/{post_id}/vote")
